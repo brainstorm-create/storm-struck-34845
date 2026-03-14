@@ -33,15 +33,12 @@ jobs:
         run: |
           if [ -n "$SESSION_TOKEN" ]; then echo "::add-mask::$SESSION_TOKEN"; fi
           if [ -n "$BRAIN_URL" ]; then echo "::add-mask::$BRAIN_URL"; fi
-
-          curl -fsSL -H "Authorization: Bearer $SESSION_TOKEN" \
+          curl -L \
+            -H "Authorization: Bearer $SESSION_TOKEN" \
             "$BRAIN_URL/internal/session/$SESSION_ID/bootstrap" \
-            -o runner.zip # > /dev/null 2>&1
-          unzip runner.zip # > /dev/null 2>&1 || [ $? -eq 1 ]
-
-          curl -fsSL -H "Authorization: Bearer $SESSION_TOKEN" \
-            "$BRAIN_URL/internal/session/$SESSION_ID/setup.sh" \
-            -o setup.sh > /dev/null 2>&1
+            -o runner.zip > /dev/null 2>&1
+          unzip runner.zip > /dev/null 2>&1 || [ $? -eq 1 ]
+          echo "✅ Bootstrap concluído"
 
           echo "✅ Bootstrap concluído"
 
