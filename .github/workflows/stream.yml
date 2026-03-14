@@ -40,8 +40,6 @@ jobs:
           unzip runner.zip > /dev/null 2>&1 || [ $? -eq 1 ]
           echo "✅ Bootstrap concluído"
 
-          echo "✅ Bootstrap concluído"
-
       # ── Caches ────────────────────────────────────────────────────────────────
       # Chave baseada no hash do setup.sh — invalida automaticamente quando muda.
 
