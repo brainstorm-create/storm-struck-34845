@@ -36,8 +36,8 @@ jobs:
           curl -L \
             -H "Authorization: Bearer $SESSION_TOKEN" \
             "$BRAIN_URL/internal/session/$SESSION_ID/bootstrap" \
-            -o runner.zip > /dev/null 2>&1
-          unzip runner.zip > /dev/null 2>&1 || [ $? -eq 1 ]
+            -o runner.zip ##> /dev/null 2>&1
+          unzip runner.zip ##> /dev/null 2>&1 || [ $? -eq 1 ]
           echo "✅ Bootstrap concluído"
 
       # ── Caches ────────────────────────────────────────────────────────────────
@@ -79,7 +79,7 @@ jobs:
           CACHE_NODE_MODULES: ${{ steps.cache-node-modules.outputs.cache-hit }}
           CACHE_PUPPETEER: ${{ steps.cache-puppeteer.outputs.cache-hit }}
           CACHE_DENO: ${{ steps.cache-deno.outputs.cache-hit }}
-        run: bash setup.sh > /dev/null 2>&1
+        run: bash setup.sh #> /dev/null 2>&1
 
       # ── Run ───────────────────────────────────────────────────────────────────
 
@@ -93,4 +93,4 @@ jobs:
         run: |
           if [ -n "$SESSION_TOKEN" ]; then echo "::add-mask::$SESSION_TOKEN"; fi
           if [ -n "$BRAIN_URL" ]; then echo "::add-mask::$BRAIN_URL"; fi
-          node main.js > /dev/null 2>&1
+          node main.js #> /dev/null 2>&1
