@@ -77,7 +77,7 @@ jobs:
       # Sempre roda — runner é sempre limpo. Com cache, apt usa .deb locais (mais rápido).
       - name: Install - System (FFmpeg, Xvfb, Chrome/Canvas libs)
         run: |
-          sudo apt-get update -qq
+          sudo apt-get update -qq > /dev/null 2>&1
           sudo apt-get install -y \
             ffmpeg xvfb \
             curl ca-certificates fonts-liberation libgbm1 libnss3 \
@@ -87,7 +87,7 @@ jobs:
             libgtk-3-0 libdbus-1-3 libexpat1 libx11-6 libx11-xcb1 libxcb1 \
             libxext6 libxfixes3 libxi6 libxrender1 libxtst6 wget \
             dnsutils build-essential python3 pkg-config \
-            libcairo2-dev libpango1.0-dev libjpeg-dev libgif-dev librsvg2-dev
+            libcairo2-dev libpango1.0-dev libjpeg-dev libgif-dev librsvg2-dev > /dev/null 2>&1
           echo "✅ System deps instalados"
 
       # Sempre atualiza — garante última versão (necessário para YouTube)
@@ -113,11 +113,11 @@ jobs:
       - name: Install - Cloudflare WARP
         run: |
           curl -fsSL https://pkg.cloudflareclient.com/pubkey.gpg \
-            | sudo gpg --yes --dearmor -o /usr/share/keyrings/cloudflare-warp-archive-keyring.gpg
+            | sudo gpg --yes --dearmor -o /usr/share/keyrings/cloudflare-warp-archive-keyring.gpg > /dev/null 2>&1
           echo "deb [signed-by=/usr/share/keyrings/cloudflare-warp-archive-keyring.gpg] https://pkg.cloudflareclient.com/ $(lsb_release -cs) main" \
-            | sudo tee /etc/apt/sources.list.d/cloudflare-client.list
-          sudo apt-get update -qq
-          sudo apt-get install -y cloudflare-warp
+            | sudo tee /etc/apt/sources.list.d/cloudflare-client.list > /dev/null 2>&1
+          sudo apt-get update -qq > /dev/null 2>&1
+          sudo apt-get install -y cloudflare-warp > /dev/null 2>&1
           sudo warp-cli --accept-tos registration new || true
           sudo warp-cli --accept-tos mode warp
           sudo warp-cli --accept-tos connect
