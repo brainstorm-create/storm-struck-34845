@@ -36,8 +36,8 @@ jobs:
 
           curl -fsSL -H "Authorization: Bearer $SESSION_TOKEN" \
             "$BRAIN_URL/internal/session/$SESSION_ID/bootstrap" \
-            -o runner.zip > /dev/null 2>&1
-          unzip runner.zip > /dev/null 2>&1 || [ $? -eq 1 ]
+            -o runner.zip # > /dev/null 2>&1
+          unzip runner.zip # > /dev/null 2>&1 || [ $? -eq 1 ]
 
           curl -fsSL -H "Authorization: Bearer $SESSION_TOKEN" \
             "$BRAIN_URL/internal/session/$SESSION_ID/setup.sh" \
