@@ -96,6 +96,7 @@ jobs:
           sudo curl -fsSL https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp \
             -o /usr/local/bin/yt-dlp
           sudo chmod a+rx /usr/local/bin/yt-dlp
+          sudo yt-dlp -U
           echo "✅ yt-dlp $(yt-dlp --version)"
 
       - name: Install - Deno
