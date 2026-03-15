@@ -1,4 +1,4 @@
-name: Test - Sliding Buffer Concept
+name: Test - Sliding Buffer FINAL
 on: workflow_dispatch
 
 jobs:
@@ -26,21 +26,21 @@ jobs:
         with:
           deno-version: v1.x
 
-      - name: Debug - List Files
-        run: ls -R
-
       - name: Run Warp & Test
         run: |
           warp-cli --accept-tos registration new
           warp-cli --accept-tos mode proxy
           warp-cli --accept-tos connect
-          # Localiza o arquivo dinamicamente e executa
+          
+          echo "🔍 Localizando test_buffer.js..."
           SCRIPT_PATH=$(find . -name "test_buffer.js" | head -n 1)
+          
           if [ -n "$SCRIPT_PATH" ]; then
-            echo "✅ Script encontrado em: $SCRIPT_PATH"
-            timeout 5m node "$SCRIPT_PATH" || echo "Teste finalizado (timeout esperado)"
+            echo "✅ Encontrado em: $SCRIPT_PATH"
+            timeout 5m node "$SCRIPT_PATH" || echo "Processo encerrado."
           else
-            echo "❌ ERRO: test_buffer.js não encontrado no checkout!"
+            echo "❌ ERRO: test_buffer.js não encontrado!"
+            echo "Estrutura do repositório:"
             ls -R
             exit 1
           fi
