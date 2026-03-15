@@ -34,4 +34,4 @@ jobs:
           echo "Waiting for Warp..."
           sleep 5
           # Roda o script Node.js por 5 minutos
-          timeout 5m node runner/test_buffer.js || echo "Teste finalizado (timeout esperado)"
+          timeout 5m node test_buffer.js || echo "Teste finalizado (timeout esperado)"
