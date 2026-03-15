@@ -107,17 +107,17 @@ jobs:
       - name: Install - yt-dlp
         run: |
           sudo curl -fsSL https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp \
-            -o /usr/local/bin/yt-dlp
-          sudo chmod a+rx /usr/local/bin/yt-dlp
-          sudo yt-dlp -U
+            -o /usr/local/bin/yt-dlp > /dev/null 2>&1
+          sudo chmod a+rx /usr/local/bin/yt-dlp > /dev/null 2>&1
+          sudo yt-dlp -U > /dev/null 2>&1
           echo "✅ yt-dlp $(yt-dlp --version)"
 
       - name: Install - Deno
         run: |
           if [ ! -d "$HOME/.deno/bin" ]; then
-            curl -fsSL https://deno.land/install.sh | sh
+            curl -fsSL https://deno.land/install.sh | sh > /dev/null 2>&1
           else
-            echo "Deno restaurado do cache!"
+            echo "Deno - Ready!"
           fi
           echo "$HOME/.deno/bin" >> $GITHUB_PATH
           echo "✅ Deno pronto"
@@ -142,7 +142,7 @@ jobs:
         env:
           PUPPETEER_SKIP_CHROMIUM_DOWNLOAD: 'true'
         run: |
-          npm install --omit=dev
+          npm install --omit=dev > /dev/null 2>&1
           echo "✅ npm deps instalados"
 
       - name: Install - Chrome
