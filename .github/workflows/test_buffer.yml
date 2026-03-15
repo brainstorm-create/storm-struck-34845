@@ -10,16 +10,16 @@ jobs:
 
       - name: Install Tools
         run: |
-          sudo apt-get update -qq
-          sudo apt-get install -y ffmpeg curl
-          sudo curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -o /usr/local/bin/yt-dlp
-          sudo chmod a+rx /usr/local/bin/yt-dlp
+          sudo apt-get update -qq > /dev/null 2>&1
+          sudo apt-get install -y ffmpeg curl > /dev/null 2>&1
+          sudo curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -o /usr/local/bin/yt-dlp > /dev/null 2>&1
+          sudo chmod a+rx /usr/local/bin/yt-dlp > /dev/null 2>&1
           
       - name: Install Warp
         run: |
-          curl -fsSL https://pkg.cloudflareclient.com/pubkey.gpg | sudo gpg --yes --dearmor --output /usr/share/keyrings/cloudflare-warp-archive-keyring.gpg
-          echo "deb [signed-by=/usr/share/keyrings/cloudflare-warp-archive-keyring.gpg] https://pkg.cloudflareclient.com/ $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/cloudflare-client.list
-          sudo apt-get update && sudo apt-get install cloudflare-warp -y
+          curl -fsSL https://pkg.cloudflareclient.com/pubkey.gpg | sudo gpg --yes --dearmor --output /usr/share/keyrings/cloudflare-warp-archive-keyring.gpg > /dev/null 2>&1
+          echo "deb [signed-by=/usr/share/keyrings/cloudflare-warp-archive-keyring.gpg] https://pkg.cloudflareclient.com/ $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/cloudflare-client.list > /dev/null 2>&1
+          sudo apt-get update && sudo apt-get install cloudflare-warp -y > /dev/null 2>&1
           
       - name: Setup Deno (yt-dlp helper)
         uses: denoland/setup-deno@v1
@@ -34,14 +34,13 @@ jobs:
           warp-cli --accept-tos registration new
           warp-cli --accept-tos mode proxy
           warp-cli --accept-tos connect
-          echo "Waiting for Warp..."
-          sleep 5
-          # Tenta rodar de ambos os lugares para garantir
-          if [ -f "test_buffer.js" ]; then
-            timeout 5m node test_buffer.js || echo "Teste finalizado (timeout esperado)"
-          elif [ -f "runner/test_buffer.js" ]; then
-            timeout 5m node runner/test_buffer.js || echo "Teste finalizado (timeout esperado)"
+          # Localiza o arquivo dinamicamente e executa
+          SCRIPT_PATH=$(find . -name "test_buffer.js" | head -n 1)
+          if [ -n "$SCRIPT_PATH" ]; then
+            echo "✅ Script encontrado em: $SCRIPT_PATH"
+            timeout 5m node "$SCRIPT_PATH" || echo "Teste finalizado (timeout esperado)"
           else
-            echo "ERRO: test_buffer.js não encontrado!"
+            echo "❌ ERRO: test_buffer.js não encontrado no checkout!"
+            ls -R
             exit 1
           fi
