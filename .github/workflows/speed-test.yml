@@ -33,8 +33,8 @@ jobs:
       - name: Measure Download (With Warp)
         run: |
           echo "--- DOWNLOAD TEST COM WARP ---"
-          # Usando DigitalOcean NYC (Muito estável)
-          curl -Lk -o /dev/null -w "Velocidade: %{speed_download} bytes/sec\nTempo: %{time_total}s\n" https://speedtest-nyc1.digitalocean.com/100mb.test
+          # Cloudflare's own speedtest endpoint (Best for Warp)
+          curl -Lk -o /dev/null -w "Velocidade: %{speed_download} bytes/sec\nTempo: %{time_total}s\n" https://speed.cloudflare.com/__down?bytes=100000000
           
       - name: Disconnect Warp
         run: |
@@ -44,4 +44,4 @@ jobs:
       - name: Measure Download (Without Warp)
         run: |
           echo "--- DOWNLOAD TEST SEM WARP ---"
-          curl -Lk -o /dev/null -w "Velocidade: %{speed_download} bytes/sec\nTempo: %{time_total}s\n" https://speedtest-nyc1.digitalocean.com/100mb.test
+          curl -Lk -o /dev/null -w "Velocidade: %{speed_download} bytes/sec\nTempo: %{time_total}s\n" https://speed.cloudflare.com/__down?bytes=100000000
