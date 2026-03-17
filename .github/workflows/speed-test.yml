@@ -41,7 +41,8 @@ jobs:
         run: |
           echo "--- SPEEDTEST COM WARP ---"
           if command -v speedtest > /dev/null; then
-            speedtest --accept-license --accept-tos
+            # Tenta com flags da Ookla, se der erro de 'unrecognized arguments', tenta sem
+            speedtest --accept-license --accept-tos || speedtest
           else
             speedtest-cli
           fi
@@ -55,7 +56,7 @@ jobs:
         run: |
           echo "--- SPEEDTEST SEM WARP ---"
           if command -v speedtest > /dev/null; then
-            speedtest --accept-license --accept-tos
+            speedtest --accept-license --accept-tos || speedtest
           else
             speedtest-cli
           fi
