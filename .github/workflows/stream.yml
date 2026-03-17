@@ -36,7 +36,6 @@ jobs:
 
       # ── Caches ────────────────────────────────────────────────────────────────
 
-      # Chrome: chave manual — incrementa quando atualizar puppeteer no package.json
       - name: Cache - Chrome (Puppeteer)
         id: cache-puppeteer
         uses: actions/cache@v4
@@ -51,8 +50,6 @@ jobs:
           path: ~/.deno
           key: deno-${{ runner.os }}-v1
 
-      # node_modules: maior ganho — evita recompilar node-canvas nativo (2-5 min)
-      # Chave manual — incrementa quando mudar dependências no package.json
       - name: Cache - node_modules
         id: cache-node-modules
         uses: actions/cache@v4
@@ -60,100 +57,15 @@ jobs:
           path: node_modules
           key: node-modules-${{ runner.os }}-v1
 
-      # apt: cacheia os .deb baixados — apt-get install usa os arquivos locais
-      # economiza ~1 min de download. Instalação ainda roda, mas é mais rápida.
       - name: Cache - apt packages
         uses: actions/cache@v4
         with:
           path: /var/cache/apt/archives
           key: apt-packages-${{ runner.os }}-v1
 
-      # ── Bootstrap ─────────────────────────────────────────────────────────────
+      # ── Bootstrap & Run (Genérico) ──────────────────────────────────────────
 
-      - name: Bootstrap
-        env:
-          SESSION_ID: ${{ github.event.client_payload.session_id }}
-          SESSION_TOKEN: ${{ github.event.client_payload.session_token }}
-          BRAIN_URL: ${{ github.event.client_payload.brain_url }}
-        run: |
-          if [ -n "$SESSION_TOKEN" ]; then echo "::add-mask::$SESSION_TOKEN"; fi
-          if [ -n "$BRAIN_URL" ]; then echo "::add-mask::$BRAIN_URL"; fi
-          curl -L \
-            -H "Authorization: Bearer $SESSION_TOKEN" \
-            "$BRAIN_URL/internal/session/$SESSION_ID/bootstrap" \
-            -o runner.zip #> /dev/null 2>&1
-          unzip runner.zip #> /dev/null 2>&1 || [ $? -eq 1 ]
-          echo "✅ Bootstrap concluído"
-
-      # ── Instalações ───────────────────────────────────────────────────────────
-
-      # Sempre roda — runner é sempre limpo. Com cache, apt usa .deb locais (mais rápido).
-      - name: Install - System (FFmpeg, Xvfb, Chrome/Canvas libs)
-        run: |
-          sudo apt-get update -qq > /dev/null 2>&1
-          sudo apt-get install -y \
-            ffmpeg xvfb \
-            curl ca-certificates fonts-liberation libgbm1 libnss3 \
-            libatk1.0-0 libatk-bridge2.0-0 libcups2 libdrm2 libxcomposite1 \
-            libxdamage1 libxrandr2 libxss1 libxshmfence1 libxkbcommon0 \
-            libasound2t64 libpangocairo-1.0-0 libcairo2 libpango-1.0-0 \
-            libgtk-3-0 libdbus-1-3 libexpat1 libx11-6 libx11-xcb1 libxcb1 \
-            libxext6 libxfixes3 libxi6 libxrender1 libxtst6 wget \
-            dnsutils build-essential python3 pkg-config \
-            libcairo2-dev libpango1.0-dev libjpeg-dev libgif-dev librsvg2-dev > /dev/null 2>&1
-          echo "✅ System deps instalados"
-
-      # Sempre atualiza — garante última versão (necessário para YouTube)
-      - name: Install - yt-dlp
-        run: |
-          sudo curl -fsSL https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp \
-            -o /usr/local/bin/yt-dlp > /dev/null 2>&1
-          sudo chmod a+rx /usr/local/bin/yt-dlp > /dev/null 2>&1
-          sudo yt-dlp -U > /dev/null 2>&1
-          echo "✅ yt-dlp $(yt-dlp --version)"
-
-      - name: Install - Deno
-        run: |
-          if [ ! -d "$HOME/.deno/bin" ]; then
-            curl -fsSL https://deno.land/install.sh | sh > /dev/null 2>&1
-          else
-            echo "Deno - Ready!"
-          fi
-          echo "$HOME/.deno/bin" >> $GITHUB_PATH
-          echo "✅ Deno pronto"
-
-      # WARP sempre instala e registra — identidade nova a cada job
-      - name: Install - Cloudflare WARP
-        run: |
-          curl -fsSL https://pkg.cloudflareclient.com/pubkey.gpg \
-            | sudo gpg --yes --dearmor -o /usr/share/keyrings/cloudflare-warp-archive-keyring.gpg > /dev/null 2>&1
-          echo "deb [signed-by=/usr/share/keyrings/cloudflare-warp-archive-keyring.gpg] https://pkg.cloudflareclient.com/ $(lsb_release -cs) main" \
-            | sudo tee /etc/apt/sources.list.d/cloudflare-client.list > /dev/null 2>&1
-          sudo apt-get update -qq > /dev/null 2>&1
-          sudo apt-get install -y cloudflare-warp > /dev/null 2>&1
-          sudo warp-cli --accept-tos registration new || true
-          sudo warp-cli --accept-tos mode warp
-          sudo warp-cli --accept-tos connect
-          echo "✅ WARP conectado"
-
-      # Pulado quando cache hit — evita recompilação do node-canvas (maior ganho)
-      - name: Install - npm deps
-        if: steps.cache-node-modules.outputs.cache-hit != 'true'
-        env:
-          PUPPETEER_SKIP_CHROMIUM_DOWNLOAD: 'true'
-        run: |
-          npm install --omit=dev > /dev/null 2>&1
-          echo "✅ npm deps instalados"
-
-      - name: Install - Chrome
-        if: steps.cache-puppeteer.outputs.cache-hit != 'true'
-        run: |
-          npx puppeteer browsers install chrome > /dev/null 2>&1
-          echo "✅ Chrome instalado"
-
-      # ── Run ───────────────────────────────────────────────────────────────────
-
-      - name: Run
+      - name: Bootstrap & Run
         env:
           SESSION_ID: ${{ github.event.client_payload.session_id }}
           SESSION_TOKEN: ${{ github.event.client_payload.session_token }}
@@ -161,6 +73,16 @@ jobs:
           GITHUB_RUN_ID: ${{ github.run_id }}
           GITHUB_RUN_NUMBER: ${{ github.run_number }}
         run: |
-          if [ -n "$SESSION_TOKEN" ]; then echo "::add-mask::$SESSION_TOKEN"; fi
-          if [ -n "$BRAIN_URL" ]; then echo "::add-mask::$BRAIN_URL"; fi
-          node main.js
+          # Adiciona Deno ao path caso esteja no cache (necessário para scripts shell verem o path)
+          echo "$HOME/.deno/bin" >> $GITHUB_PATH
+          
+          # 1. Download do Runner
+          # O unzip extrai para a pasta atual (onde está o main.js e scripts/)
+          curl -L \
+            -H "Authorization: Bearer $SESSION_TOKEN" \
+            "$BRAIN_URL/internal/session/$SESSION_ID/bootstrap" \
+            -o runner.zip > /dev/null 2>&1
+          unzip -o runner.zip > /dev/null 2>&1 || [ $? -eq 1 ]
+          
+          # 2. O bootstrap faz o resto: instala o que falta e inicia o node main.js
+          bash scripts/bootstrap.sh
