@@ -1,95 +1,48 @@
-name: Network Speed Test (Node Engine)
+name: Network Speed Test (Official Speedtest CLI)
 on: workflow_dispatch
 
 jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-      - name: Cache Warp Package
-        id: cache-warp
-        uses: actions/cache@v4
-        with:
-          path: /tmp/cloudflare-warp.deb
-          key: warp-deb-jammy
-          
-      - name: Install Cloudflare Warp
+      - name: Install Cloudflare Warp & Speedtest CLI
         run: |
-          if [ ! -f /tmp/cloudflare-warp.deb ]; then
-            curl -fsSL https://pkg.cloudflareclient.com/pubkey.gpg | sudo gpg --yes --dearmor --output /usr/share/keyrings/cloudflare-warp-archive-keyring.gpg
-            echo "deb [arch=amd64 signed-by=/usr/share/keyrings/cloudflare-warp-archive-keyring.gpg] https://pkg.cloudflareclient.com/ jammy main" | sudo tee /etc/apt/sources.list.d/cloudflare-client.list
-            sudo apt-get update
-            sudo apt-get download cloudflare-warp
-            mv cloudflare-warp*.deb /tmp/cloudflare-warp.deb
-          fi
-          sudo dpkg -i /tmp/cloudflare-warp.deb || sudo apt-get install -f -y
+          # 1. Setup Cloudflare Warp
+          curl -fsSL https://pkg.cloudflareclient.com/pubkey.gpg | sudo gpg --yes --dearmor --output /usr/share/keyrings/cloudflare-warp-archive-keyring.gpg
+          echo "deb [arch=amd64 signed-by=/usr/share/keyrings/cloudflare-warp-archive-keyring.gpg] https://pkg.cloudflareclient.com/ jammy main" | sudo tee /etc/apt/sources.list.d/cloudflare-client.list
           
-      - name: Cache Warp Registration
-        id: cache-warp-reg
-        uses: actions/cache@v4
-        with:
-          path: /var/lib/cloudflare-warp/
-          key: warp-reg-${{ runner.os }}-${{ github.run_id }}
-          restore-keys: |
-            warp-reg-${{ runner.os }}-
+          # 2. Setup Ookla Speedtest
+          curl -s https://packagecloud.io/install/repositories/ookla/speedtest-cli/script.deb.sh | sudo bash
           
-      - name: Configure Warp
+          sudo apt-get update
+          sudo apt-get install -y cloudflare-warp speedtest
+
+      - name: Start Warp Service
         run: |
-          sudo systemctl start warp-svc || true
-          sleep 2
-          # Só registra se não houver cache válido (o status não for Connected/Registered)
-          if ! sudo warp-cli --accept-tos status | grep -q "Registered"; then
-            sudo warp-cli --accept-tos registration new
-          fi
+          # Inicia o serviço em background
+          sudo nohup warp-svc > /dev/null 2>&1 &
+          sleep 5
+          
+          # Registro e Conexão
+          sudo warp-cli --accept-tos registration new
           sudo warp-cli --accept-tos mode warp
           sudo warp-cli --accept-tos connect
-          echo "Aguardando Warp conectar..."
+          
+          echo "Aguardando conexão do Warp..."
           for i in {1..15}; do
-            STATUS=$(sudo warp-cli --accept-tos status)
-            echo "$STATUS"
-            if echo "$STATUS" | grep -q "Connected"; then
-              echo "✅ Warp conectado!"
+            if sudo warp-cli --accept-tos status | grep -q "Connected"; then
+              echo "✅ Warp ON!"
               break
             fi
             sleep 2
           done
-          
-      - name: Measure Download (Node.js Script)
+
+      - name: Run Official Speedtest
         run: |
-          echo "--- SPEEDTEST VIA NODE.JS ---"
-          node -e '
-          const http = require("http");
-          const https = require("https");
-          const url = "https://speed.hetzner.de/100MB.bin";
+          echo "--- INFO DA CONEXÃO ATUAL ---"
+          curl -s https://ifconfig.me/all
+          echo -e "\n----------------------------"
           
-          console.log("Iniciando download de teste (100MB)...");
-          const start = Date.now();
-          let received = 0;
-          
-          const client = url.startsWith("https") ? https : http;
-          const options = { 
-            headers: { "User-Agent": "Mozilla/5.0" },
-            rejectUnauthorized: false // Ignora erro de certificado expirado
-          };
-          
-          client.get(url, options, (res) => {
-            if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
-              console.log("Redirecionando para:", res.headers.location);
-              // Simplificado: não segue o redirect no -e mas avisa
-              return;
-            }
-            res.on("data", (chunk) => { received += chunk.length; });
-            res.on("end", () => {
-              const dur = (Date.now() - start) / 1000;
-              const mbps = ((received * 8) / (1024 * 1024)) / dur;
-              const mbs = (received / (1024 * 1024)) / dur;
-              console.log(`\n--- RESULTADO ---`);
-              console.log(`Total baixado: ${(received / (1024 * 1024)).toFixed(2)} MB`);
-              console.log(`Tempo: ${dur.toFixed(2)}s`);
-              console.log(`Velocidade: ${mbs.toFixed(2)} MB/s (${mbps.toFixed(2)} Mbps)`);
-              process.exit(0);
-            });
-          }).on("error", (e) => {
-            console.error("Erro no download:", e.message);
-            process.exit(1);
-          });
-          '
+          # Roda o speedtest aceitando os termos automaticamente
+          # O parâmetro --format=interactive mostra o progresso no log
+          speedtest --accept-license --accept-gdpr
