@@ -1,4 +1,4 @@
-name: Network Speed Test
+name: Network Speed Test (Native)
 on: workflow_dispatch
 
 jobs:
@@ -14,7 +14,6 @@ jobs:
           
       - name: Configure Warp
         run: |
-          # A instalação via apt no Actions às vezes precisa de um restart do serviço
           sudo systemctl start warp-svc || true
           sleep 2
           sudo warp-cli --accept-tos registration new
@@ -31,32 +30,17 @@ jobs:
             sleep 2
           done
           
-      - name: Install Speedtest
+      - name: Measure Download (With Warp)
         run: |
-          # Tenta o oficial Ookla primeiro, se falhar usa o speedtest-cli (python)
-          curl -s https://packagecloud.io/install/repositories/ookla/speedtest-cli/script.deb.sh | sudo bash || true
-          sudo apt-get install -y speedtest || sudo apt-get install -y speedtest-cli
-          
-      - name: Run Speedtest (With Warp)
-        run: |
-          echo "--- SPEEDTEST COM WARP ---"
-          if command -v speedtest > /dev/null; then
-            # Tenta com flags da Ookla, se der erro de 'unrecognized arguments', tenta sem
-            speedtest --accept-license --accept-tos || speedtest
-          else
-            speedtest-cli
-          fi
+          echo "--- DOWNLOAD TEST COM WARP ---"
+          curl -o /dev/null -w "Velocidade: %{speed_download} bytes/sec\nTempo: %{time_total}s\n" https://speed.hetzner.de/100MB.bin
           
       - name: Disconnect Warp
         run: |
           sudo warp-cli --accept-tos disconnect || true
           sleep 2
           
-      - name: Run Speedtest (Without Warp)
+      - name: Measure Download (Without Warp)
         run: |
-          echo "--- SPEEDTEST SEM WARP ---"
-          if command -v speedtest > /dev/null; then
-            speedtest --accept-license --accept-tos || speedtest
-          else
-            speedtest-cli
-          fi
+          echo "--- DOWNLOAD TEST SEM WARP ---"
+          curl -o /dev/null -w "Velocidade: %{speed_download} bytes/sec\nTempo: %{time_total}s\n" https://speed.hetzner.de/100MB.bin
