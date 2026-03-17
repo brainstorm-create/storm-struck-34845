@@ -33,7 +33,7 @@ jobs:
       - name: Measure Download (With Warp)
         run: |
           echo "--- DOWNLOAD TEST COM WARP ---"
-          curl -o /dev/null -w "Velocidade: %{speed_download} bytes/sec\nTempo: %{time_total}s\n" https://speed.hetzner.de/100MB.bin
+          curl -Lk -o /dev/null -w "Velocidade: %{speed_download} bytes/sec\nTempo: %{time_total}s\n" https://speed.hetzner.de/100MB.bin
           
       - name: Disconnect Warp
         run: |
@@ -43,4 +43,4 @@ jobs:
       - name: Measure Download (Without Warp)
         run: |
           echo "--- DOWNLOAD TEST SEM WARP ---"
-          curl -o /dev/null -w "Velocidade: %{speed_download} bytes/sec\nTempo: %{time_total}s\n" https://speed.hetzner.de/100MB.bin
+          curl -Lk -o /dev/null -w "Velocidade: %{speed_download} bytes/sec\nTempo: %{time_total}s\n" https://speed.hetzner.de/100MB.bin
