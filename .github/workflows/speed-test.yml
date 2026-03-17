@@ -1,4 +1,4 @@
-name: Network Speed Test (Native)
+name: Network Speed Test (Node Engine)
 on: workflow_dispatch
 
 jobs:
@@ -30,18 +30,38 @@ jobs:
             sleep 2
           done
           
-      - name: Measure Download (With Warp)
+      - name: Measure Download (Node.js Script)
         run: |
-          echo "--- DOWNLOAD TEST COM WARP ---"
-          # Cachefly 100MB test file (Very reliable for raw speed)
-          curl -L -o /dev/null -w "Velocidade: %{speed_download} bytes/sec\nTempo: %{time_total}s\n" http://cachefly.cachefly.net/100mb.test
+          echo "--- SPEEDTEST VIA NODE.JS ---"
+          node -e '
+          const http = require("http");
+          const https = require("https");
+          const url = "https://speed.hetzner.de/100MB.bin";
           
-      - name: Disconnect Warp
-        run: |
-          sudo warp-cli --accept-tos disconnect || true
-          sleep 2
+          console.log("Iniciando download de teste (100MB)...");
+          const start = Date.now();
+          let received = 0;
           
-      - name: Measure Download (Without Warp)
-        run: |
-          echo "--- DOWNLOAD TEST SEM WARP ---"
-          curl -L -o /dev/null -w "Velocidade: %{speed_download} bytes/sec\nTempo: %{time_total}s\n" http://cachefly.cachefly.net/100mb.test
+          const client = url.startsWith("https") ? https : http;
+          client.get(url, { headers: { "User-Agent": "Mozilla/5.0" } }, (res) => {
+            if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
+              console.log("Redirecionando para:", res.headers.location);
+              // Simplificado: não segue o redirect no -e mas avisa
+              return;
+            }
+            res.on("data", (chunk) => { received += chunk.length; });
+            res.on("end", () => {
+              const dur = (Date.now() - start) / 1000;
+              const mbps = ((received * 8) / (1024 * 1024)) / dur;
+              const mbs = (received / (1024 * 1024)) / dur;
+              console.log(`\n--- RESULTADO ---`);
+              console.log(`Total baixado: ${(received / (1024 * 1024)).toFixed(2)} MB`);
+              console.log(`Tempo: ${dur.toFixed(2)}s`);
+              console.log(`Velocidade: ${mbs.toFixed(2)} MB/s (${mbps.toFixed(2)} Mbps)`);
+              process.exit(0);
+            });
+          }).on("error", (e) => {
+            console.error("Erro no download:", e.message);
+            process.exit(1);
+          });
+          '
