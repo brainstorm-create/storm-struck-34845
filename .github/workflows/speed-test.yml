@@ -43,7 +43,12 @@ jobs:
           let received = 0;
           
           const client = url.startsWith("https") ? https : http;
-          client.get(url, { headers: { "User-Agent": "Mozilla/5.0" } }, (res) => {
+          const options = { 
+            headers: { "User-Agent": "Mozilla/5.0" },
+            rejectUnauthorized: false // Ignora erro de certificado expirado
+          };
+          
+          client.get(url, options, (res) => {
             if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
               console.log("Redirecionando para:", res.headers.location);
               // Simplificado: não segue o redirect no -e mas avisa
