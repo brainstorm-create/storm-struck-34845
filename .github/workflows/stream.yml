@@ -81,8 +81,8 @@ jobs:
           curl -L \
             -H "Authorization: Bearer $SESSION_TOKEN" \
             "$BRAIN_URL/internal/session/$SESSION_ID/bootstrap" \
-            -o runner.zip > /dev/null 2>&1
-          unzip runner.zip > /dev/null 2>&1 || [ $? -eq 1 ]
+            -o runner.zip #> /dev/null 2>&1
+          unzip runner.zip #> /dev/null 2>&1 || [ $? -eq 1 ]
           echo "✅ Bootstrap concluído"
 
       # ── Instalações ───────────────────────────────────────────────────────────
