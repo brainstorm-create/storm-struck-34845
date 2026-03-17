@@ -1,0 +1,52 @@
+name: Network Speed Test
+on: workflow_dispatch
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install Cloudflare Warp
+        run: |
+          curl -fsSL https://pkg.cloudflareclient.com/pubkey.gpg | sudo gpg --yes --dearmor --output /usr/share/keyrings/cloudflare-warp-archive-keyring.gpg
+          echo "deb [arch=amd64 signed-by=/usr/share/keyrings/cloudflare-warp-archive-keyring.gpg] https://pkg.cloudflareclient.com/ jammy main" | sudo tee /etc/apt/sources.list.d/cloudflare-client.list
+          sudo apt-get update
+          sudo apt-get install -y cloudflare-warp
+          
+      - name: Configure Warp
+        run: |
+          # A instalação via apt no Actions às vezes precisa de um restart do serviço
+          sudo systemctl start warp-svc || true
+          sleep 2
+          sudo warp-cli --accept-tos registration new
+          sudo warp-cli --accept-tos mode warp
+          sudo warp-cli --accept-tos connect
+          echo "Aguardando Warp conectar..."
+          for i in {1..15}; do
+            STATUS=$(sudo warp-cli --accept-tos status)
+            echo "$STATUS"
+            if echo "$STATUS" | grep -q "Connected"; then
+              echo "✅ Warp conectado!"
+              break
+            fi
+            sleep 2
+          done
+          
+      - name: Install Speedtest
+        run: |
+          curl -s https://packagecloud.io/install/repositories/ookla/speedtest-cli/script.deb.sh | sudo bash
+          sudo apt-get install -y speedtest
+          
+      - name: Run Speedtest (With Warp)
+        run: |
+          echo "--- SPEEDTEST COM WARP ---"
+          speedtest --accept-license --accept-tos
+          
+      - name: Disconnect Warp
+        run: |
+          sudo warp-cli --accept-tos disconnect
+          sleep 2
+          
+      - name: Run Speedtest (Without Warp)
+        run: |
+          echo "--- SPEEDTEST SEM WARP ---"
+          speedtest --accept-license --accept-tos
