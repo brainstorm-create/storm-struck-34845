@@ -33,7 +33,6 @@ jobs:
       - name: Measure Download (With Warp)
         run: |
           echo "--- DOWNLOAD TEST COM WARP ---"
-          # Cloudflare's own speedtest endpoint (Best for Warp)
           curl -Lk -o /dev/null -w "Velocidade: %{speed_download} bytes/sec\nTempo: %{time_total}s\n" https://speed.cloudflare.com/__down?bytes=100000000
           
       - name: Disconnect Warp
