@@ -5,18 +5,41 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
+      - name: Cache Warp Package
+        id: cache-warp
+        uses: actions/cache@v4
+        with:
+          path: /tmp/cloudflare-warp.deb
+          key: warp-deb-jammy
+          
       - name: Install Cloudflare Warp
         run: |
-          curl -fsSL https://pkg.cloudflareclient.com/pubkey.gpg | sudo gpg --yes --dearmor --output /usr/share/keyrings/cloudflare-warp-archive-keyring.gpg
-          echo "deb [arch=amd64 signed-by=/usr/share/keyrings/cloudflare-warp-archive-keyring.gpg] https://pkg.cloudflareclient.com/ jammy main" | sudo tee /etc/apt/sources.list.d/cloudflare-client.list
-          sudo apt-get update
-          sudo apt-get install -y cloudflare-warp
+          if [ ! -f /tmp/cloudflare-warp.deb ]; then
+            curl -fsSL https://pkg.cloudflareclient.com/pubkey.gpg | sudo gpg --yes --dearmor --output /usr/share/keyrings/cloudflare-warp-archive-keyring.gpg
+            echo "deb [arch=amd64 signed-by=/usr/share/keyrings/cloudflare-warp-archive-keyring.gpg] https://pkg.cloudflareclient.com/ jammy main" | sudo tee /etc/apt/sources.list.d/cloudflare-client.list
+            sudo apt-get update
+            sudo apt-get download cloudflare-warp
+            mv cloudflare-warp*.deb /tmp/cloudflare-warp.deb
+          fi
+          sudo dpkg -i /tmp/cloudflare-warp.deb || sudo apt-get install -f -y
+          
+      - name: Cache Warp Registration
+        id: cache-warp-reg
+        uses: actions/cache@v4
+        with:
+          path: /var/lib/cloudflare-warp/
+          key: warp-reg-${{ runner.os }}-${{ github.run_id }}
+          restore-keys: |
+            warp-reg-${{ runner.os }}-
           
       - name: Configure Warp
         run: |
           sudo systemctl start warp-svc || true
           sleep 2
-          sudo warp-cli --accept-tos registration new
+          # Só registra se não houver cache válido (o status não for Connected/Registered)
+          if ! sudo warp-cli --accept-tos status | grep -q "Registered"; then
+            sudo warp-cli --accept-tos registration new
+          fi
           sudo warp-cli --accept-tos mode warp
           sudo warp-cli --accept-tos connect
           echo "Aguardando Warp conectar..."
