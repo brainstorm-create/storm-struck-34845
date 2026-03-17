@@ -1,48 +1,47 @@
-name: Network Speed Test (Official Speedtest CLI)
+name: Network Speed Test (Fixed for Ubuntu 24.04)
 on: workflow_dispatch
 
 jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-      - name: Install Cloudflare Warp & Speedtest CLI
+      - name: Install Cloudflare Warp
         run: |
-          # 1. Setup Cloudflare Warp
+          # Usando 'noble' explicitamente ou mantendo 'jammy' que é compatível
           curl -fsSL https://pkg.cloudflareclient.com/pubkey.gpg | sudo gpg --yes --dearmor --output /usr/share/keyrings/cloudflare-warp-archive-keyring.gpg
-          echo "deb [arch=amd64 signed-by=/usr/share/keyrings/cloudflare-warp-archive-keyring.gpg] https://pkg.cloudflareclient.com/ jammy main" | sudo tee /etc/apt/sources.list.d/cloudflare-client.list
-          
-          # 2. Setup Ookla Speedtest
-          curl -s https://packagecloud.io/install/repositories/ookla/speedtest-cli/script.deb.sh | sudo bash
-          
+          echo "deb [arch=amd64 signed-by=/usr/share/keyrings/cloudflare-warp-archive-keyring.gpg] https://pkg.cloudflareclient.com/ noble main" | sudo tee /etc/apt/sources.list.d/cloudflare-client.list
           sudo apt-get update
-          sudo apt-get install -y cloudflare-warp speedtest
+          sudo apt-get install -y cloudflare-warp
+
+      - name: Install Speedtest CLI (Direct Binary)
+        run: |
+          # Baixa o binário direto para evitar erro de repositório no Ubuntu 24.04
+          curl -L https://install.speedtest.net/app/cli/ookla-speedtest-1.2.0-linux-x86_64.tgz -o speedtest.tgz
+          tar -xzf speedtest.tgz
+          sudo mv speedtest /usr/local/bin/
+          speedtest --version
 
       - name: Start Warp Service
         run: |
-          # Inicia o serviço em background
           sudo nohup warp-svc > /dev/null 2>&1 &
           sleep 5
-          
-          # Registro e Conexão
           sudo warp-cli --accept-tos registration new
           sudo warp-cli --accept-tos mode warp
           sudo warp-cli --accept-tos connect
           
-          echo "Aguardando conexão do Warp..."
+          echo "Aguardando conexão..."
           for i in {1..15}; do
             if sudo warp-cli --accept-tos status | grep -q "Connected"; then
-              echo "✅ Warp ON!"
+              echo "✅ Warp Conectado!"
               break
             fi
             sleep 2
           done
 
-      - name: Run Official Speedtest
+      - name: Run Speedtest
         run: |
-          echo "--- INFO DA CONEXÃO ATUAL ---"
-          curl -s https://ifconfig.me/all
+          echo "IP de Saída (Cloudflare):"
+          curl -s https://ifconfig.me
           echo -e "\n----------------------------"
-          
-          # Roda o speedtest aceitando os termos automaticamente
-          # O parâmetro --format=interactive mostra o progresso no log
+          # Roda o teste oficial
           speedtest --accept-license --accept-gdpr
