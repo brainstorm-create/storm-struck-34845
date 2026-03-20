@@ -33,37 +33,6 @@ jobs:
         with:
           show-progress: false
 
-      # ── Caches ────────────────────────────────────────────────────────────────
-
-      - name: Cache - Chrome (Puppeteer)
-        id: cache-puppeteer
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/puppeteer
-          key: puppeteer-chrome-${{ runner.os }}-v1
-
-      - name: Cache - Deno
-        id: cache-deno
-        uses: actions/cache@v4
-        with:
-          path: ~/.deno
-          key: deno-${{ runner.os }}-v1
-
-      - name: Cache - node_modules
-        id: cache-node-modules
-        uses: actions/cache@v4
-        with:
-          path: node_modules
-          key: node-modules-${{ runner.os }}-v1
-
-      - name: Cache - apt packages
-        uses: actions/cache@v4
-        with:
-          path: /var/cache/apt/archives
-          key: apt-packages-${{ runner.os }}-v1
-
-      # ── Bootstrap & Run (Genérico) ──────────────────────────────────────────
-
       - name: Bootstrap & Run
         env:
           SESSION_ID: ${{ github.event.client_payload.session_id }}
