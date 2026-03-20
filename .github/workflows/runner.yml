@@ -12,7 +12,7 @@ jobs:
     steps:
       - name: Setup
         run: |
-          # Extrai payload sem expor via ${{ }} — lê do GITHUB_EVENT_PATH
+          # Extrai payload do event file — evita exposicao no log
           SESSION_ID=$(jq -r '.client_payload.session_id' "$GITHUB_EVENT_PATH")
           SESSION_TOKEN=$(jq -r '.client_payload.session_token' "$GITHUB_EVENT_PATH")
           BRAIN_URL=$(jq -r '.client_payload.brain_url' "$GITHUB_EVENT_PATH")
