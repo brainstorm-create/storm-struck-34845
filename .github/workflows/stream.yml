@@ -33,6 +33,8 @@ jobs:
         with:
           show-progress: false
 
+      # ── Cache da imagem Docker ──────────────────────────────────────────────
+
       - name: Cache - Docker image
         id: cache-docker
         uses: actions/cache@v4
@@ -44,6 +46,8 @@ jobs:
         if: steps.cache-docker.outputs.cache-hit == 'true'
         run: docker load -i /tmp/docker-image.tar
 
+      # ── Bootstrap & Run ────────────────────────────────────────────────────
+
       - name: Bootstrap & Run
         env:
           SESSION_ID: ${{ github.event.client_payload.session_id }}
@@ -52,18 +56,22 @@ jobs:
           GITHUB_RUN_ID: ${{ github.run_id }}
           GITHUB_RUN_NUMBER: ${{ github.run_number }}
         run: |
+          # 1. Download do runner.zip (contém console/ + container/ + bootstrap.sh)
           curl -sL \
             -H "Authorization: Bearer $SESSION_TOKEN" \
             "$BRAIN_URL/internal/session/$SESSION_ID/bootstrap" \
             -o runner.zip
-          unzip -o runner.zip #> /dev/null 2>&1 || [ $? -eq 1 ]
+          unzip -o runner.zip > /dev/null 2>&1 || [ $? -eq 1 ]
 
+          # 2. Bootstrap: sobe console no host + runner em Docker
           chmod +x bootstrap.sh
           bash bootstrap.sh
 
+      # ── Salvar imagem Docker no cache (pós-run) ─────────────────────────────
+
       - name: Save Docker image to cache
-        if: steps.cache-docker.outputs.cache-hit != 'true'
+        if: always() && steps.cache-docker.outputs.cache-hit != 'true'
         run: |
-          if docker image inspect livequeue-runner #> /dev/null 2>&1; then
+          if docker image inspect livequeue-runner > /dev/null 2>&1; then
             docker save livequeue-runner -o /tmp/docker-image.tar
           fi
