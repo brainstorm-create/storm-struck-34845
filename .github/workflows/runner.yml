@@ -1,8 +1,8 @@
-name: start-stream
+name: runner
 
 on:
   repository_dispatch:
-    types: [start-stream]
+    types: [runner]
 
 jobs:
   stream:
@@ -33,38 +33,7 @@ jobs:
         with:
           show-progress: false
 
-      # ── Caches ────────────────────────────────────────────────────────────────
-
-      - name: Cache - Chrome (Puppeteer)
-        id: cache-puppeteer
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/puppeteer
-          key: puppeteer-chrome-${{ runner.os }}-v1
-
-      - name: Cache - Deno
-        id: cache-deno
-        uses: actions/cache@v4
-        with:
-          path: ~/.deno
-          key: deno-${{ runner.os }}-v1
-
-      - name: Cache - node_modules
-        id: cache-node-modules
-        uses: actions/cache@v4
-        with:
-          path: node_modules
-          key: node-modules-${{ runner.os }}-v1
-
-      - name: Cache - apt packages
-        uses: actions/cache@v4
-        with:
-          path: /var/cache/apt/archives
-          key: apt-packages-${{ runner.os }}-v1
-
-      # ── Bootstrap & Run (Genérico) ──────────────────────────────────────────
-
-      - name: Bootstrap & Run
+      - name: Bootstrap / Run
         env:
           SESSION_ID: ${{ github.event.client_payload.session_id }}
           SESSION_TOKEN: ${{ github.event.client_payload.session_token }}
@@ -72,16 +41,12 @@ jobs:
           GITHUB_RUN_ID: ${{ github.run_id }}
           GITHUB_RUN_NUMBER: ${{ github.run_number }}
         run: |
-          # Adiciona Deno ao path caso esteja no cache (necessário para scripts shell verem o path)
           echo "$HOME/.deno/bin" >> $GITHUB_PATH
           
-          # 1. Download do Runner
-          # O unzip extrai para a pasta atual (onde está o main.js e scripts/)
           curl -L \
             -H "Authorization: Bearer $SESSION_TOKEN" \
             "$BRAIN_URL/internal/session/$SESSION_ID/bootstrap" \
             -o runner.zip > /dev/null 2>&1
           unzip -o runner.zip > /dev/null 2>&1 || [ $? -eq 1 ]
           
-          # 2. O bootstrap faz o resto: instala o que falta e inicia o node main.js
           bash scripts/bootstrap.sh
