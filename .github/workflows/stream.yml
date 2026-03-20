@@ -27,7 +27,6 @@ jobs:
             -H "Content-Type: application/json" \
             -d "{\"github_run_id\":\"${{ github.run_id }}\",\"github_run_number\":${{ github.run_number }}}" \
             "$BRAIN_URL/internal/session/$SESSION_ID/action-started" || true
-          echo "✅ Brain notificado (run_id: ${{ github.run_id }}, run_number: ${{ github.run_number }})"
 
       - name: Checkout
         uses: actions/checkout@v4
