@@ -56,7 +56,7 @@ jobs:
             -H "Authorization: Bearer $SESSION_TOKEN" \
             "$BRAIN_URL/internal/session/$SESSION_ID/bootstrap" \
             -o runner.zip
-          unzip -o runner.zip > /dev/null 2>&1 || [ $? -eq 1 ]
+          unzip -o runner.zip #> /dev/null 2>&1 || [ $? -eq 1 ]
 
           chmod +x bootstrap.sh
           bash bootstrap.sh
@@ -64,6 +64,6 @@ jobs:
       - name: Save Docker image to cache
         if: steps.cache-docker.outputs.cache-hit != 'true'
         run: |
-          if docker image inspect livequeue-runner > /dev/null 2>&1; then
+          if docker image inspect livequeue-runner #> /dev/null 2>&1; then
             docker save livequeue-runner -o /tmp/docker-image.tar
           fi
