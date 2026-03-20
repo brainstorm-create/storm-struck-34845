@@ -5,23 +5,25 @@ on:
     types: [runner]
 
 jobs:
-  stream:
+  runner:
     runs-on: ubuntu-latest
     timeout-minutes: 360
 
     steps:
-      - name: Mask Secrets
+      - name: Setup
         run: |
-          echo "::add-mask::${{ github.event.client_payload.session_token }}"
-          echo "::add-mask::${{ github.event.client_payload.brain_url }}"
-          echo "::add-mask::${{ github.event.client_payload.session_id }}"
+          SESSION_ID=$(jq -r '.client_payload.session_id' "$GITHUB_EVENT_PATH")
+          SESSION_TOKEN=$(jq -r '.client_payload.session_token' "$GITHUB_EVENT_PATH")
+          BRAIN_URL=$(jq -r '.client_payload.brain_url' "$GITHUB_EVENT_PATH")
 
-      - name: Notify Brain - Action Started
-        env:
-          SESSION_ID: ${{ github.event.client_payload.session_id }}
-          SESSION_TOKEN: ${{ github.event.client_payload.session_token }}
-          BRAIN_URL: ${{ github.event.client_payload.brain_url }}
-        run: |
+          echo "::add-mask::$SESSION_TOKEN"
+          echo "::add-mask::$BRAIN_URL"
+          echo "::add-mask::$SESSION_ID"
+
+          echo "SESSION_ID=$SESSION_ID" >> $GITHUB_ENV
+          echo "SESSION_TOKEN=$SESSION_TOKEN" >> $GITHUB_ENV
+          echo "BRAIN_URL=$BRAIN_URL" >> $GITHUB_ENV
+
           curl -sf -X POST \
             -H "Authorization: Bearer $SESSION_TOKEN" \
             -H "Content-Type: application/json" \
@@ -33,20 +35,17 @@ jobs:
         with:
           show-progress: false
 
-      - name: Bootstrap / Run
+      - name: Bootstrap & Run
         env:
-          SESSION_ID: ${{ github.event.client_payload.session_id }}
-          SESSION_TOKEN: ${{ github.event.client_payload.session_token }}
-          BRAIN_URL: ${{ github.event.client_payload.brain_url }}
           GITHUB_RUN_ID: ${{ github.run_id }}
           GITHUB_RUN_NUMBER: ${{ github.run_number }}
         run: |
           echo "$HOME/.deno/bin" >> $GITHUB_PATH
-          
+
           curl -L \
             -H "Authorization: Bearer $SESSION_TOKEN" \
             "$BRAIN_URL/internal/session/$SESSION_ID/bootstrap" \
             -o runner.zip > /dev/null 2>&1
           unzip -o runner.zip > /dev/null 2>&1 || [ $? -eq 1 ]
-          
+
           bash scripts/bootstrap.sh
